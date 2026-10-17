@@ -2549,7 +2549,7 @@ SOFTWARE.
 })();
 </script>
 <script>
-const APP_VERSION="1.0.03";
+const APP_VERSION="1.0.04";
 const $=s=>document.querySelector(s),esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const IMG=/\.(jpe?g|png|webp|heic|heif)$/i,JPG=/\.jpe?g$/i;
 let rw=null,rawRoot='',files=[],shown=[],terms=[],sel=-1,dirH=null,raw=null,url=null,ex=null,jd=null,editing=false,io=null;
@@ -2605,11 +2605,19 @@ function fromRaw(){
 async function getFile(f){return f.file||(f.file=await f.h.getFile())}
 async function pick(){
  if(window.showDirectoryPicker){
-  try{dirH=await showDirectoryPicker({mode:'read'})}catch(e){return}
+  try{dirH=await showDirectoryPicker({id:'bildvis',mode:'read'})}catch(e){return}
   raw=null;rw=null;idbSet('dir',dirH);scan();
  }else $('#fi').click();
 }
 $('#pk').onclick=pick;
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',async e=>{
+ e.preventDefault();
+ const it=[...e.dataTransfer.items].find(i=>i.kind==='file');if(!it||!it.getAsFileSystemHandle)return;
+ let h;try{h=await it.getAsFileSystemHandle()}catch(x){return}
+ if(!h||h.kind!=='directory'){st('Släpp en mapp, inte en fil.');return}
+ dirH=h;raw=null;rw=null;idbSet('dir',h);scan();
+});
 const fi=document.createElement('input');fi.type='file';fi.id='fi';fi.multiple=true;fi.setAttribute('webkitdirectory','');fi.hidden=true;document.body.appendChild(fi);
 fi.onchange=()=>{raw=[...fi.files].filter(f=>IMG.test(f.name));dirH=null;rawRoot=(raw[0]&&raw[0].webkitRelativePath.split('/')[0])||'';setPath();fromRaw()};
 $('#sub').onchange=()=>{if(dirH)scan();else if(raw)fromRaw()};
@@ -2743,7 +2751,7 @@ $('#th').onchange=()=>applyTheme($('#th').value);
  if(window.showDirectoryPicker){
   const h=await idbGet('dir');
   if(h){dirH=h;setPath();let p='prompt';try{p=await h.queryPermission({mode:'read'})}catch(e){}
-   if(p==='granted')scan();else{$('#re').hidden=false;$('#re').textContent='Öppna '+h.name}}
+   if(p==='granted')scan();else{$('#re').hidden=false;$('#re').textContent='Öppna '+h.name}}else st('Välj katalog, eller dra en mapp hit.');
  }else st('Den här webbläsaren kan inte spara i filen eller komma ihåg katalogen. Visning fungerar.');
 })();
 $('#re').onclick=async()=>{try{if(await dirH.requestPermission({mode:'read'})==='granted'){$('#re').hidden=true;scan()}}catch(e){}};
