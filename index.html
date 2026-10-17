@@ -33,8 +33,7 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:290px 1fr 310px;grid
 #D div:hover{background:var(--bt)}#D div.on{background:var(--ac);color:var(--acink)}
 #E{grid-column:2/4;display:flex;align-items:center;gap:4px;padding:4px;height:128px}
 #strip{flex:1;display:flex;gap:6px;overflow-x:auto;scroll-behavior:smooth;align-items:center;height:100%}
-#strip canvas{height:112px;width:auto;flex:none;border-radius:4px;cursor:pointer;background:var(--vw);outline:2px solid transparent}
-#strip canvas.on{outline-color:var(--ac)}
+#strip .th{height:112px;min-width:150px;flex:none;border-radius:4px;cursor:pointer;background:var(--vw);outline:2px solid transparent;overflow:hidden}#strip .th.done{min-width:0}#strip .th canvas{height:112px;width:auto;display:block}#strip .th.on{outline-color:var(--ac)}
 #E>button{height:100%;padding:0 8px;font-size:20px}
 #Fw{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}#cap{padding:6px 10px;word-break:break-all;font-size:13px;min-height:40px}#cap b{font-weight:600}#F{flex:1;position:relative;overflow:hidden;background:var(--vw);touch-action:none;cursor:grab;min-height:0}
 #F img{position:absolute;left:0;top:0;max-width:none;transform-origin:0 0;user-select:none;-webkit-user-drag:none}
@@ -45,6 +44,10 @@ main.gc{grid-template-columns:290px 1fr 48px}main.gc #G>:not(#gh){display:none}m
 #gf label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px}#gf input{width:100%;display:block;margin-top:2px;color:var(--ink)}
 #gx{flex:1;min-height:0;overflow:auto;font-size:12px}#gx td{padding:2px 4px;vertical-align:top;border-bottom:1px solid var(--ln);word-break:break-word}#gx td:first-child{color:var(--dim);white-space:nowrap}
 #G .bar{display:flex;gap:6px}#G .bar button{flex:1}
+#busy{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4)}#busy[hidden]{display:none}
+#bi{display:flex;align-items:center;gap:12px;padding:14px 22px;font-size:16px;color:var(--ink)}
+.spin{width:22px;height:22px;border:3px solid var(--ln);border-top-color:var(--ac);border-radius:50%;animation:sp .8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
 footer{display:flex;justify-content:space-between;gap:10px;padding:4px 12px;font-size:12px;color:var(--dim);border-top:1px solid var(--ln)}
 @media(max-width:860px){body{height:auto;min-height:100dvh}main{display:flex;flex-direction:column}#L{max-height:60vh}#F{height:60vh;flex:none}#G{max-height:70vh}#gt svg{transform:rotate(180deg)}main.gc #gt svg{transform:rotate(0)}}
 </style></head><body>
@@ -66,6 +69,7 @@ footer{display:flex;justify-content:space-between;gap:10px;padding:4px 12px;font
 <section id="Fw"><div id="F" class="box"><img id="img" alt=""><div id="zb"><button id="zi" title="Zooma in">+</button><button id="zo" title="Zooma ut">−</button><button id="zf" title="Anpassa till rutan">⤢</button></div></div><div id="cap" class="box"><span class="dim">Ingen bild vald</span></div></section>
 <aside id="G" class="box"><div id="gh"><b>EXIF</b><button id="gt" aria-expanded="true" aria-controls="gf gx" title="Dölj EXIF"><svg width="12" height="12" viewBox="0 0 12 12"><polyline points="2,4 6,8 10,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></button></div><div id="gf"></div><div id="gx"><span class="dim">Ingen bild vald</span></div><div id="gm" class="dim"></div><div class="bar"><button id="ed" disabled>Redigera</button><button id="sv" class="pri" disabled>Spara</button></div></aside>
 </main>
+<div id="busy" hidden><div class="box" id="bi"><div class="spin"></div><span id="bt">Jag tänker…</span></div></div>
 <footer><span id="st"></span><span>Bildvis <span id="v2"></span> © 2026 Per Andersson</span></footer>
 <script>/* piexifjs
 
@@ -2551,7 +2555,7 @@ SOFTWARE.
 })();
 </script>
 <script>
-const APP_VERSION="1.0.05";
+const APP_VERSION="1.0.06";
 const $=s=>document.querySelector(s),esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const IMG=/\.(jpe?g|png|webp|heic|heif)$/i,JPG=/\.jpe?g$/i;
 let rw=null,rawRoot='',files=[],shown=[],terms=[],sel=-1,dirH=null,raw=null,url=null,ex=null,jd=null,editing=false,io=null;
@@ -2566,6 +2570,8 @@ function cap(){
 }
 $('#pe').onclick=()=>{const n=rootName();if(!n)return;const l=rootLabel(),v=prompt('Skriv in katalogens hela sökväg (webbläsaren kan bara läsa mappens namn). Tomt = bara namnet.',l===n?'':l);if(v===null)return;
  try{if(v.trim())localStorage.setItem('bv-path:'+n,v.trim());else localStorage.removeItem('bv-path:'+n)}catch(e){}setPath();cap()};
+const tick=()=>new Promise(r=>setTimeout(r,0));
+function busy(t){const b=$('#busy');b.hidden=!t;if(t)$('#bt').textContent=t}
 const st=s=>$('#st').textContent=s,msg=s=>$('#gm').textContent=s;
 // --- minne för katalogen (IndexedDB) ---
 const idb=()=>new Promise((res,rej)=>{const r=indexedDB.open('bildvis',1);r.onupgradeneeded=()=>r.result.createObjectStore('k');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
@@ -2590,17 +2596,19 @@ function match(f,q){
 // --- läsa katalog ---
 async function walk(h,path,deep,out){
  try{for await(const[n,e]of h.entries()){
-  if(e.kind==='file'){if(IMG.test(n))out.push({name:n,path:path+n,h:e})}
+  if(e.kind==='file'){if(IMG.test(n)){out.push({name:n,path:path+n,h:e});if(out.length%100===0){busy('Jag tänker… '+out.length+' bilder hittade');await tick()}}}
   else if(deep)await walk(e,path+n+'/',deep,out);
  }}catch(e){}
 }
 const cmp=(a,b)=>a.path.localeCompare(b.path,'sv',{numeric:true});
 function fin(list){files=list.map(prep).sort(cmp);render()}
 async function scan(){
- if(!dirH)return;setPath();st('Läser katalog…');
- const out=[];await walk(dirH,'',$('#sub').checked,out);fin(out);
+ if(!dirH)return;setPath();st('');busy('Jag tänker…');await tick();
+ const out=[];
+ try{await walk(dirH,'',$('#sub').checked,out);busy('Jag tänker… ritar '+out.length+' bilder');await tick();fin(out)}finally{busy(false)}
 }
-function fromRaw(){
+async function fromRaw(){busy('Jag tänker…');await tick();try{fromRaw2()}finally{busy(false)}}
+function fromRaw2(){
  const deep=$('#sub').checked;
  fin(raw.map(f=>{const p=f.webkitRelativePath.split('/').slice(1);return{name:f.name,path:p.join('/'),file:f,depth:p.length}}).filter(f=>deep||f.depth==1));
 }
@@ -2631,12 +2639,12 @@ function add(){
 $('#add').onclick=add;$('#q').onkeydown=e=>{if(e.key==='Enter')add()};
 $('#C').onclick=e=>{const b=e.target.closest('[data-x]');if(b){terms.splice(+b.dataset.x,1);render()}};
 $('#D').onclick=e=>{const d=e.target.closest('[data-i]');if(d)show(+d.dataset.i)};
-$('#strip').onclick=e=>{const c=e.target.closest('canvas');if(c)show(+c.dataset.i)};
+$('#strip').onclick=e=>{const c=e.target.closest('.th');if(c)show(+c.dataset.i)};
 $('#pl').onclick=()=>$('#strip').scrollBy({left:-400});$('#pr').onclick=()=>$('#strip').scrollBy({left:400});
-async function thumb(c,f){
+async function thumb(el,f){
  try{const file=await getFile(f);let bm;
   try{bm=await createImageBitmap(file,{resizeHeight:160})}catch(e){bm=await createImageBitmap(file)}
-  const h=Math.min(160,bm.height),w=Math.round(bm.width*h/bm.height);c.width=w;c.height=h;c.getContext('2d').drawImage(bm,0,0,w,h);if(bm.close)bm.close();
+  const h=Math.min(160,bm.height),w=Math.round(bm.width*h/bm.height);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(bm,0,0,w,h);if(bm.close)bm.close();el.replaceChildren(c);el.classList.add('done');
  }catch(e){}
 }
 function render(){
@@ -2647,8 +2655,8 @@ function render(){
  const S=$('#strip');S.innerHTML='';if(io)io.disconnect();
  io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);thumb(e.target,shown[+e.target.dataset.i])}}),{root:S,rootMargin:'400px'});
  const fr=document.createDocumentFragment();
- shown.forEach((f,i)=>{const c=document.createElement('canvas');c.width=150;c.height=112;c.dataset.i=i;c.title=f.path;fr.appendChild(c)});
- S.appendChild(fr);S.querySelectorAll('canvas').forEach(c=>io.observe(c));
+ shown.forEach((f,i)=>{const c=document.createElement('div');c.className='th';c.dataset.i=i;c.title=f.path;fr.appendChild(c)});
+ S.appendChild(fr);S.querySelectorAll('.th').forEach(c=>io.observe(c));
  st('');cap();
  if(shown.length)show(0);else{$('#img').removeAttribute('src');ex=null;jd=null;editing=false;$('#gf').innerHTML='';$('#gx').innerHTML='<span class="dim">Ingen bild vald</span>';$('#ed').disabled=$('#sv').disabled=true}
 }
